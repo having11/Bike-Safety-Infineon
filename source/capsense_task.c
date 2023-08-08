@@ -199,6 +199,8 @@ void task_capsense(void* param)
                     }
                     case CAPSENSE_PROCESS:
                     {
+                        Cy_CapSense_IncrementGestureTimestamp(&cy_capsense_context);
+
                         /* Process all widgets */
                         if(CY_RET_SUCCESS == Cy_CapSense_ProcessAllWidgets(&cy_capsense_context))
                         {
@@ -280,6 +282,8 @@ static void process_touch(void)
     slider_pos = slider_touch->ptrPosition->x;
     slider_touched = slider_touch->numPosition;
 
+    uint32_t gestureStatus = Cy_CapSense_DecodeWidgetGestures(CY_CAPSENSE_LINEARSLIDER0_WDGT_ID, &cy_capsense_context);
+
     /* Detect new touch on Button0 */
     if((0u != button0_status) && (0u == button0_status_prev))
     {
@@ -302,16 +306,41 @@ static void process_touch(void)
     {
         /* Slider value in percentage */
         slider_value = (slider_pos * 100) /
-        cy_capsense_context.ptrWdConfig[CY_CAPSENSE_LINEARSLIDER0_WDGT_ID].xResolution;
-        led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
-        /* Setting brightness value */
-        led_cmd_data.brightness = slider_value;
-        send_led_command = true;
+            cy_capsense_context.ptrWdConfig[CY_CAPSENSE_LINEARSLIDER0_WDGT_ID].xResolution;
+        // led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
+        // /* Setting brightness value */
+        // led_cmd_data.brightness = slider_value;
+        // send_led_command = true;
 
         /* Setting ble app data value */
         ble_capsense_data.sliderdata = slider_value;
         send_ble_command = true;
+    }
 
+    if (CY_CAPSENSE_GESTURE_NO_GESTURE != (gestureStatus & CY_CAPSENSE_GESTURE_ONE_FNGR_FLICK_MASK))
+    {
+        printf("Flick detected- ");
+        uint32_t direction = (gestureStatus >> 0x10);
+        direction = direction & 0x700;
+
+        switch (direction >> CY_CAPSENSE_GESTURE_DIRECTION_OFFSET_ONE_FLICK)
+        {
+            case CY_CAPSENSE_GESTURE_DIRECTION_LEFT:
+                printf("LEFT\r\n");
+                led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
+                /* Setting brightness value */
+                led_cmd_data.brightness = 10;
+                send_led_command = true;
+                break;
+
+            case CY_CAPSENSE_GESTURE_DIRECTION_RIGHT:
+                printf("RIGHT\r\n");
+                led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
+                /* Setting brightness value */
+                led_cmd_data.brightness = 100;
+                send_led_command = true;
+                break;
+        }
     }
 
     /* Send command to update LED state if required */
