@@ -50,6 +50,7 @@
 #include "capsense_task.h"
 #include "led_task.h"
 #include "ble_task.h"
+#include "ws2812.h"
 
 /*******************************************************************************
 * Macros
@@ -122,6 +123,11 @@ int main(void)
         printf("Failed to create the queue!\r\n");
         CY_ASSERT(0u);
     }
+    ws2818_res_t ws_res;
+    ws_res = ws2812_init(P5_0, NC, NC);
+    ws2812_set_all_leds(255, 0, 0);
+    ws2812_update();
+
     capsense_command_q  = xQueueCreate(SINGLE_ELEMENT_QUEUE,
                                      sizeof(capsense_command_t));
     if(NULL == capsense_command_q)
