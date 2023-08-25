@@ -6,6 +6,7 @@ From https://github.com/HunkoBohdan/music_synched_LED_PSoC/blob/topic/DMA-for-ws
 #ifndef __WS2812_H__
 #define __WS2812_H__
 
+#include "config.h"
 #include "cybsp.h"
 
 #define WS2812_LEDS_COUNT 12
@@ -16,6 +17,12 @@ typedef enum
     ws2812_error_generic,
     ws2812_error_invalid_led_id
 } ws2818_res_t;
+
+typedef struct {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} led_color_t;
 
 ws2818_res_t ws2812_init(cyhal_gpio_t mosi, cyhal_gpio_t miso, cyhal_gpio_t sclk);
 ws2818_res_t ws2812_set_led(uint16_t led, uint8_t red, uint8_t green, uint8_t blue);

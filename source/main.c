@@ -50,6 +50,7 @@
 #include "capsense_task.h"
 #include "led_task.h"
 #include "ble_task.h"
+#include "indicator_task.h"
 #include "ws2812.h"
 
 /*******************************************************************************
