@@ -4,6 +4,8 @@
 #include "cy_retarget_io.h"
 #include "indicator_task.h"
 
+#define ASSERT_WITH_PRINT(x, ...)   if(!(x)) { printf(__VA_ARGS__ ); CY_ASSERT(0); }
+
 QueueHandle_t indicator_command_data_q;
 TimerHandle_t indicator_timer_handle;
 static indicator_command_data_t indicator_cmd_data;

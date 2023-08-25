@@ -53,6 +53,8 @@
 #include "indicator_task.h"
 #include "ws2812.h"
 
+#define ASSERT_WITH_PRINT(x, ...)   if(!(x)) { printf(__VA_ARGS__ ); CY_ASSERT(0); }
+
 /*******************************************************************************
 * Macros
 ********************************************************************************/
@@ -62,11 +64,13 @@
 */
 #define TASK_CAPSENSE_PRIORITY      (1u)
 #define TASK_LED_PRIORITY           (1u)
+#define TASK_INDICATOR_PRIORITY     (1u)
 #define TASK_BLE_PRIORITY           (1u)
 
 /* Stack sizes of user tasks in this project */
 #define TASK_CAPSENSE_STACK_SIZE    (2u*configMINIMAL_STACK_SIZE)
 #define TASK_LED_STACK_SIZE         (configMINIMAL_STACK_SIZE)
+#define TASK_INDICATOR_STACK_SIZE   (2u*configMINIMAL_STACK_SIZE)
 #define TASK_BLE_STACK_SIZE         (4u*configMINIMAL_STACK_SIZE)
 
 /* Queue lengths of message queues used in this project */
@@ -124,10 +128,14 @@ int main(void)
         printf("Failed to create the queue!\r\n");
         CY_ASSERT(0u);
     }
-    ws2818_res_t ws_res;
-    ws_res = ws2812_init(P5_0, NC, NC);
-    ws2812_set_all_leds(255, 0, 0);
-    ws2812_update();
+
+    indicator_command_data_q  = xQueueCreate(SINGLE_ELEMENT_QUEUE,
+                                     sizeof(indicator_command_data_t));
+    if(NULL == indicator_command_data_q)
+    {
+        printf("Failed to create the queue!\r\n");
+        CY_ASSERT(0u);
+    }
 
     capsense_command_q  = xQueueCreate(SINGLE_ELEMENT_QUEUE,
                                      sizeof(capsense_command_t));
@@ -161,6 +169,13 @@ int main(void)
                               NULL, TASK_LED_PRIORITY, NULL))
     {
         printf("Failed to create the LED task!\r\n");
+        CY_ASSERT(0u);
+    }
+
+    if (pdPASS != xTaskCreate(task_indicator, "Indicator Task", TASK_INDICATOR_STACK_SIZE,
+                              NULL, TASK_INDICATOR_PRIORITY, NULL))
+    {
+        printf("Failed to create the indicator task!\r\n");
         CY_ASSERT(0u);
     }
 
