@@ -23,7 +23,6 @@ void stop_timer()
 void task_indicator(void* param)
 {
     BaseType_t rtos_api_result = pdFAIL;
-    ws2818_res_t ws_res;
 
     indicator_timer_handle = xTimerCreate
     (
@@ -36,8 +35,8 @@ void task_indicator(void* param)
 
     (void)param;
 
-    ws_res = ws2812_init(P5_0, NC, NC);
-    ASSERT_WITH_PRINT(ws2812_success == ws_res, "ws2812_init failed\r\n");
+    // ws_res = ws2812_init(P8_0, NC, NC);
+    // ASSERT_WITH_PRINT(ws2812_success == ws_res, "ws2812_init failed\r\n");
 
     for(;;)
     {
@@ -45,20 +44,30 @@ void task_indicator(void* param)
             portMAX_DELAY);
         if(pdPASS == rtos_api_result)
         {
+            stop_timer();
             switch(indicator_cmd_data.command)
             {
-                stop_timer();
                 case INDICATOR_OFF:
                 {
-                    ws2812_set_all_leds(0, 0, 0);
-                    ws2812_update();
+                    // ws2812_set_all_leds(0, 0, 0);
+                    // ws2812_update();
+
+                	Cy_GPIO_Clr(LED_LEFT_PORT, LED_LEFT_PIN);
+                	Cy_GPIO_Clr(LED_RIGHT_PORT, LED_RIGHT_PIN);
+
+                    printf("ALL OFF FROM BUTTON\n");
                 }
                 break;
 
                 case INDICATOR_BRAKE:
                 {
-                    ws2812_set_all_leds(255, 0, 0);
-                    ws2812_update();
+                    // ws2812_set_all_leds(255, 0, 0);
+                    // ws2812_update();
+
+                	Cy_GPIO_Set(LED_LEFT_PORT, LED_LEFT_PIN);
+					Cy_GPIO_Set(LED_RIGHT_PORT, LED_RIGHT_PIN);
+
+                    printf("BRAKE\n");
                 }
                 break;
 
@@ -77,25 +86,39 @@ void ws2812_timer_cb(TimerHandle_t handle)
 {
     static uint8_t state = 0;
 
+    state = 1 - state;
+
     if(state == 0)
     {
-        state = 1 - state;
-        ws2812_set_all_leds(0, 0, 0);
-        ws2812_update();
+        // ws2812_set_all_leds(0, 0, 0);
+        // ws2812_update();
+
+    	Cy_GPIO_Clr(LED_LEFT_PORT, LED_LEFT_PIN);
+		Cy_GPIO_Clr(LED_RIGHT_PORT, LED_RIGHT_PIN);
+
+        printf("ALL OFF\n");
 
         return;
     }
 
-    state = 1 - state;
-
     if(indicator_cmd_data.command == INDICATOR_BLINK_LEFT)
     {
-        ws2812_set_range(0, (WS2812_LEDS_COUNT / 2) - 1, 150, 150, 0);
-        ws2812_update();
+        // ws2812_set_range(0, (WS2812_LEDS_COUNT / 2) - 1, 150, 150, 0);
+        // ws2812_update();
+
+    	Cy_GPIO_Set(LED_LEFT_PORT, LED_LEFT_PIN);
+		Cy_GPIO_Clr(LED_RIGHT_PORT, LED_RIGHT_PIN);
+
+        printf("LEFT\n");
     }
     else if(indicator_cmd_data.command == INDICATOR_BLINK_RIGHT)
     {
-        ws2812_set_range((WS2812_LEDS_COUNT / 2), WS2812_LEDS_COUNT - 1, 150, 150, 0);
-        ws2812_update();
+        // ws2812_set_range((WS2812_LEDS_COUNT / 2), WS2812_LEDS_COUNT - 1, 150, 150, 0);
+        // ws2812_update();
+
+    	Cy_GPIO_Clr(LED_LEFT_PORT, LED_LEFT_PIN);
+		Cy_GPIO_Set(LED_RIGHT_PORT, LED_RIGHT_PIN);
+
+        printf("RIGHT\n");
     }
 }

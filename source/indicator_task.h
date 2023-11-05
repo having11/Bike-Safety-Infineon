@@ -5,7 +5,6 @@
 #include "task.h"
 #include "timers.h"
 #include "queue.h"
-#include "ws2812.h"
 
 typedef enum
 {

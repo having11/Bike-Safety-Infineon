@@ -45,12 +45,14 @@
 #include "cyhal.h"
 #include "cycfg.h"
 #include "cycfg_capsense.h"
+#include "cy_capsense_processing.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
 #include "led_task.h"
 #include "ble_task.h"
+#include "indicator_task.h"
 #include "capsense_task.h"
 #include "cy_retarget_io.h"
 
@@ -199,7 +201,7 @@ void task_capsense(void* param)
                     }
                     case CAPSENSE_PROCESS:
                     {
-                        Cy_CapSense_IncrementGestureTimestamp(&cy_capsense_context);
+                    	Cy_CapSense_IncrementGestureTimestamp(&cy_capsense_context);
 
                         /* Process all widgets */
                         if(CY_RET_SUCCESS == Cy_CapSense_ProcessAllWidgets(&cy_capsense_context))
@@ -256,10 +258,11 @@ static void process_touch(void)
     static ble_capsense_data_t ble_capsense_data = {0};
     /* Variables used for storing command and data for LED Task */
     led_command_data_t led_cmd_data;
-    bool send_led_command = false;
+	indicator_command_data_t indicator_cmd_data;
+	bool send_led_command = false;
+	bool send_ble_command = false;
+	bool send_indicator_command = false;
 
-
-    bool send_ble_command = false;
      /* Total capsense button in the kit */
     ble_capsense_data.buttoncount = CAPSENSE_BUTTON_COUNT;
 
@@ -299,6 +302,9 @@ static void process_touch(void)
         led_cmd_data.command = LED_TURN_OFF;
         send_led_command = true;
         ble_capsense_data.buttonstatus1 = 2u;
+        ble_capsense_data.turnSignalStatus = (uint8_t)INDICATOR_OFF;
+		indicator_cmd_data.command = INDICATOR_OFF;
+		send_indicator_command = true;
         send_ble_command = true;
     }
     /* Detect new touch on slider */
@@ -306,48 +312,54 @@ static void process_touch(void)
     {
         /* Slider value in percentage */
         slider_value = (slider_pos * 100) /
-            cy_capsense_context.ptrWdConfig[CY_CAPSENSE_LINEARSLIDER0_WDGT_ID].xResolution;
-        // led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
-        // /* Setting brightness value */
-        // led_cmd_data.brightness = slider_value;
-        // send_led_command = true;
+        cy_capsense_context.ptrWdConfig[CY_CAPSENSE_LINEARSLIDER0_WDGT_ID].xResolution;
+        led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
+        /* Setting brightness value */
+        led_cmd_data.brightness = slider_value;
+        send_led_command = true;
 
         /* Setting ble app data value */
         ble_capsense_data.sliderdata = slider_value;
         send_ble_command = true;
+
     }
 
     if (CY_CAPSENSE_GESTURE_NO_GESTURE != (gestureStatus & CY_CAPSENSE_GESTURE_ONE_FNGR_FLICK_MASK))
-    {
-        printf("Flick detected- ");
-        uint32_t direction = (gestureStatus >> 0x10);
-        direction = direction & 0x700;
+	{
+		printf("Flick detected- ");
+		uint32_t direction = (gestureStatus >> 0x10);
+		direction = direction & 0x700;
 
-        switch (direction >> CY_CAPSENSE_GESTURE_DIRECTION_OFFSET_ONE_FLICK)
-        {
-            case CY_CAPSENSE_GESTURE_DIRECTION_LEFT:
-                printf("LEFT\r\n");
-                led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
-                /* Setting brightness value */
-                led_cmd_data.brightness = 10;
-                send_led_command = true;
-                break;
+		switch (direction >> CY_CAPSENSE_GESTURE_DIRECTION_OFFSET_ONE_FLICK)
+		{
+			case CY_CAPSENSE_GESTURE_DIRECTION_LEFT:
+				printf("LEFT\r\n");
+				indicator_cmd_data.command = INDICATOR_BLINK_LEFT;
+				ble_capsense_data.turnSignalStatus = (uint8_t)INDICATOR_BLINK_LEFT;
+				send_indicator_command = true;
+				send_ble_command = true;
+				break;
 
-            case CY_CAPSENSE_GESTURE_DIRECTION_RIGHT:
-                printf("RIGHT\r\n");
-                led_cmd_data.command = LED_UPDATE_BRIGHTNESS;
-                /* Setting brightness value */
-                led_cmd_data.brightness = 100;
-                send_led_command = true;
-                break;
-        }
-    }
+			case CY_CAPSENSE_GESTURE_DIRECTION_RIGHT:
+				printf("RIGHT\r\n");
+				indicator_cmd_data.command = INDICATOR_BLINK_RIGHT;
+				ble_capsense_data.turnSignalStatus = (uint8_t)INDICATOR_BLINK_RIGHT;
+				send_indicator_command = true;
+				send_ble_command = true;
+				break;
+		}
+	}
 
     /* Send command to update LED state if required */
     if(send_led_command)
     {
         xQueueSendToBack(led_command_data_q, &led_cmd_data, 0u);
     }
+
+    if (send_indicator_command)
+	{
+		xQueueSendToBack(indicator_command_data_q, &indicator_cmd_data, 0u);
+	}
 
     /* Send command to update LED state if required */
     if(send_ble_command)

@@ -70,6 +70,9 @@ typedef struct
     uint8_t buttoncount; /* Contains capsense button count */
     uint8_t buttonstatus1; /* Contains capsense button status  */
     uint8_t buttonstatus2; /* Contains capsense button status  */
+    uint8_t radarStatus; /* Contains radar status -> None, Approaching */
+	bool updateRadar;
+    uint8_t turnSignalStatus; /* Contains turn signal state -> None, Brake, Left, Right */
 } ble_capsense_data_t;
 
 

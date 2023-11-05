@@ -50,11 +50,8 @@
 #include "capsense_task.h"
 #include "led_task.h"
 #include "ble_task.h"
-#include "indicator_task.h"
 #include "radar_task.h"
-#include "ws2812.h"
-
-#define ASSERT_WITH_PRINT(x, ...)   if(!(x)) { printf(__VA_ARGS__ ); CY_ASSERT(0); }
+#include "indicator_task.h"
 
 /*******************************************************************************
 * Macros
@@ -72,8 +69,8 @@
 /* Stack sizes of user tasks in this project */
 #define TASK_CAPSENSE_STACK_SIZE    (2u*configMINIMAL_STACK_SIZE)
 #define TASK_LED_STACK_SIZE         (configMINIMAL_STACK_SIZE)
-#define TASK_INDICATOR_STACK_SIZE   (2u*configMINIMAL_STACK_SIZE)
-#define TASK_RADAR_STACK_SIZE       (2u*configMINIMAL_STACK_SIZE)
+#define TASK_INDICATOR_STACK_SIZE   (configMINIMAL_STACK_SIZE)
+#define TASK_RADAR_STACK_SIZE       (configMINIMAL_STACK_SIZE)
 #define TASK_BLE_STACK_SIZE         (4u*configMINIMAL_STACK_SIZE)
 
 /* Queue lengths of message queues used in this project */
@@ -133,12 +130,12 @@ int main(void)
     }
 
     indicator_command_data_q  = xQueueCreate(SINGLE_ELEMENT_QUEUE,
-                                     sizeof(indicator_command_data_t));
-    if(NULL == indicator_command_data_q)
-    {
-        printf("Failed to create the queue!\r\n");
-        CY_ASSERT(0u);
-    }
+									 sizeof(indicator_command_data_t));
+	if(NULL == indicator_command_data_q)
+	{
+		printf("Failed to create the queue!\r\n");
+		CY_ASSERT(0u);
+	}
 
     capsense_command_q  = xQueueCreate(SINGLE_ELEMENT_QUEUE,
                                      sizeof(capsense_command_t));
@@ -176,18 +173,11 @@ int main(void)
     }
 
     if (pdPASS != xTaskCreate(task_indicator, "Indicator Task", TASK_INDICATOR_STACK_SIZE,
-                              NULL, TASK_INDICATOR_PRIORITY, NULL))
-    {
-        printf("Failed to create the indicator task!\r\n");
-        CY_ASSERT(0u);
-    }
-
-    if (pdPASS != xTaskCreate(task_radar, "Radar Task", TASK_RADAR_STACK_SIZE,
-                              NULL, TASK_RADAR_PRIORITY, NULL))
-    {
-        printf("Failed to create the radar task!\r\n");
-        CY_ASSERT(0u);
-    }
+							  NULL, TASK_INDICATOR_PRIORITY, NULL))
+	{
+		printf("Failed to create the indicator task!\r\n");
+		CY_ASSERT(0u);
+	}
 
     if (pdPASS != xTaskCreate(task_ble, "Ble Task", TASK_BLE_STACK_SIZE,
                               NULL, TASK_BLE_PRIORITY, NULL))
@@ -195,6 +185,13 @@ int main(void)
         printf("Failed to create the BLE task!\r\n");
         CY_ASSERT(0u);
     }
+
+    if (pdPASS != xTaskCreate(task_radar, "Radar Task", TASK_RADAR_STACK_SIZE,
+							  NULL, TASK_RADAR_PRIORITY, NULL))
+	{
+		printf("Failed to create the radar task!\r\n");
+		CY_ASSERT(0u);
+	}
 
     /* Start the RTOS scheduler. This function should never return */
     vTaskStartScheduler();

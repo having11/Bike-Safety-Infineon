@@ -505,6 +505,13 @@ static wiced_bt_gatt_status_t ble_app_gatt_req_write_value(uint16_t attr_handle,
                 case HDLD_CAPSENSE_SLIDER_CLIENT_CHAR_CONFIG:
                     ble_capsense_data.sliderdata= 0u; /* Capsense slider data */
                     break;
+                case HDLD_RADAR_DETECTION_CLIENT_CHAR_CONFIG:
+					ble_capsense_data.radarStatus = 0u;
+					ble_capsense_data.updateRadar = 0u;
+					break;
+                case HDLD_TURNSIGNAL_STATUS_CLIENT_CHAR_CONFIG:
+					ble_capsense_data.turnSignalStatus = 0u;
+					break;
                 }
 
             }
@@ -812,6 +819,44 @@ void ble_app_send_notification(void)
         }
 
     }
+
+    if((GATT_CLIENT_CONFIG_NOTIFICATION == \
+									app_radar_detection_client_char_config[0])
+									&& (0 != ble_connection_id)
+									&& (ble_capsense_data.updateRadar))
+	{
+		app_radar_detection[0] = ble_capsense_data.radarStatus;
+		status = wiced_bt_gatt_server_send_notification(
+									ble_connection_id,
+									HDLC_RADAR_DETECTION_VALUE,
+									app_gatt_db_ext_attr_tbl[6].cur_len,
+									app_gatt_db_ext_attr_tbl[6].p_data,NULL);
+
+		if(WICED_BT_GATT_SUCCESS != status)
+		{
+		   printf("Sending Radar detection notification failed\r\n");
+		}
+
+		return;
+	}
+
+    if((GATT_CLIENT_CONFIG_NOTIFICATION == \
+									app_turnsignal_status_client_char_config[0])
+									&& (0 != ble_connection_id))
+	{
+		app_turnsignal_status[0] = ble_capsense_data.turnSignalStatus;
+		status = wiced_bt_gatt_server_send_notification(
+									ble_connection_id,
+									HDLC_TURNSIGNAL_STATUS_VALUE,
+									app_gatt_db_ext_attr_tbl[8].cur_len,
+									app_gatt_db_ext_attr_tbl[8].p_data,NULL);
+
+		if(WICED_BT_GATT_SUCCESS != status)
+		{
+		   printf("Sending TurnSignal status notification failed\r\n");
+		}
+
+	}
 
 }
 
